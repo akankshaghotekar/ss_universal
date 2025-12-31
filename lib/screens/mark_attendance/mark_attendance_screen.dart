@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:geolocator/geolocator.dart';
@@ -20,6 +21,8 @@ class MarkAttendanceScreen extends StatefulWidget {
 }
 
 class _MarkAttendanceScreenState extends State<MarkAttendanceScreen> {
+  static const MethodChannel _alarmChannel = MethodChannel('alarm_channel');
+
   bool isMarking = false;
   bool isLoggingOut = false;
 
@@ -53,6 +56,13 @@ class _MarkAttendanceScreenState extends State<MarkAttendanceScreen> {
 
       service.invoke('startTracking');
 
+      // START PATROL ALARM
+      try {
+        await _alarmChannel.invokeMethod('scheduleAlarm');
+      } catch (e) {
+        debugPrint('Failed to start alarm: $e');
+      }
+
       _showMsg("Attendance marked & tracking started");
     } else {
       _showMsg(res['message'] ?? "Failed");
@@ -78,6 +88,13 @@ class _MarkAttendanceScreenState extends State<MarkAttendanceScreen> {
     if (res['status'] == 0) {
       final service = FlutterBackgroundService();
       service.invoke('stopTracking');
+
+      //  STOP PATROL ALARM COMPLETELY
+      try {
+        await _alarmChannel.invokeMethod('cancelAlarm');
+      } catch (e) {
+        debugPrint('Failed to stop alarm: $e');
+      }
 
       _showMsg("Day logged off & tracking stopped");
     } else {

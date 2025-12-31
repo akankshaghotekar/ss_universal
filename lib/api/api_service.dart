@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:ss_universal/model/completed_task_model.dart';
+import 'package:ss_universal/model/scan_history_model.dart';
 import 'package:ss_universal/model/task_model.dart';
 import 'api_config.dart';
 import '../model/client_model.dart';
@@ -143,5 +144,37 @@ class ApiService {
     } catch (e) {
       return {'status': 1, 'message': 'Network error'};
     }
+  }
+
+  static Future<Map<String, dynamic>> addBdeLocationQR({
+    required String userSrNo,
+    required String clientLocationSrNo,
+    required String lat,
+    required String lng,
+  }) async {
+    return await _postRequest(ApiConfig.addBdeLocationQRUrl, {
+      'usersrno': userSrNo,
+      'client_location_srno': clientLocationSrNo,
+      'lat': lat,
+      'lng': lng,
+    });
+  }
+
+  static Future<List<ScanHistoryModel>> getScanHistory({
+    required String userSrNo,
+    required String date,
+  }) async {
+    final res = await _postRequest(ApiConfig.getBdeLocationQRUrl, {
+      'usersrno': userSrNo,
+      'date1': date,
+    });
+
+    if (res['status'] == 0 && res['data'] != null) {
+      return (res['data'] as List)
+          .map((e) => ScanHistoryModel.fromJson(e))
+          .toList();
+    }
+
+    return [];
   }
 }

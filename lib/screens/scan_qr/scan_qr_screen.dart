@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
-import 'package:ss_universal/utils/app_colors.dart';
+import 'package:ss_universal/api/api_service.dart';
+import 'package:ss_universal/shared_pref/shared_pref_helper.dart';
 import 'package:ss_universal/utils/media_query.dart';
 
 class ScanQrScreen extends StatefulWidget {
@@ -15,13 +18,15 @@ class _ScanQrScreenState extends State<ScanQrScreen> {
   final MobileScannerController _controller = MobileScannerController();
   bool _isScanned = false;
 
+  static const MethodChannel _alarmChannel = MethodChannel('alarm_channel');
+
   @override
   void dispose() {
     _controller.dispose();
     super.dispose();
   }
 
-  void _onDetect(BarcodeCapture capture) {
+  Future<void> _onDetect(BarcodeCapture capture) async {
     if (_isScanned) return;
 
     final barcode = capture.barcodes.first;
@@ -29,17 +34,59 @@ class _ScanQrScreenState extends State<ScanQrScreen> {
 
     _isScanned = true;
 
-    final String qrValue = barcode.rawValue!;
+    final String clientLocationSrNo = barcode.rawValue!.trim();
 
-    // 🔹 Handle scanned result here
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text("Scanned: $qrValue")));
+    try {
+      // Get user ID
+      final userSrNo = await SharedPrefHelper.getUserId();
+      if (userSrNo == null) {
+        _isScanned = false;
+        return;
+      }
 
-    Future.delayed(const Duration(milliseconds: 800), () {
+      // Get current location
+      final position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+
+      // Call QR location API
+      final res = await ApiService.addBdeLocationQR(
+        userSrNo: userSrNo,
+        clientLocationSrNo: clientLocationSrNo,
+        lat: position.latitude.toString(),
+        lng: position.longitude.toString(),
+      );
+
+      // Only on SUCCESS → stop alarm
+      if (res['status'] == 0) {
+        await _alarmChannel.invokeMethod('stopAlarm');
+
+        if (!mounted) return;
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("QR scanned successfully")),
+        );
+
+        Future.delayed(const Duration(milliseconds: 800), () {
+          if (!mounted) return;
+          Navigator.pop(context, clientLocationSrNo);
+        });
+      } else {
+        // API failed → alarm continues
+        _isScanned = false;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(res['message'] ?? "QR verification failed")),
+        );
+      }
+    } catch (e) {
+      _isScanned = false;
+      debugPrint('QR scan error: $e');
+
       if (!mounted) return;
-      Navigator.pop(context, qrValue);
-    });
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Something went wrong")));
+    }
   }
 
   @override
@@ -48,7 +95,6 @@ class _ScanQrScreenState extends State<ScanQrScreen> {
 
     return Scaffold(
       backgroundColor: Colors.black,
-
       body: SafeArea(
         child: Column(
           children: [
@@ -61,7 +107,7 @@ class _ScanQrScreenState extends State<ScanQrScreen> {
                 style: TextStyle(
                   fontSize: 20.sp,
                   fontWeight: FontWeight.w600,
-                  color: Colors.black,
+                  color: Colors.white,
                 ),
               ),
             ),
@@ -71,10 +117,9 @@ class _ScanQrScreenState extends State<ScanQrScreen> {
               child: Stack(
                 alignment: Alignment.center,
                 children: [
-                  /// CAMERA
                   MobileScanner(controller: _controller, onDetect: _onDetect),
 
-                  /// GREEN SCAN FRAME
+                  /// SCAN FRAME
                   Positioned(
                     child: Container(
                       width: 240.w,
@@ -101,7 +146,6 @@ class _ScanQrScreenState extends State<ScanQrScreen> {
     );
   }
 
-  /// GREEN CORNER UI
   Widget _corner({double? top, double? bottom, double? left, double? right}) {
     return Positioned(
       top: top,
@@ -114,16 +158,16 @@ class _ScanQrScreenState extends State<ScanQrScreen> {
         decoration: BoxDecoration(
           border: Border(
             top: top != null
-                ? BorderSide(color: Colors.green, width: 4)
+                ? const BorderSide(color: Colors.green, width: 4)
                 : BorderSide.none,
             bottom: bottom != null
-                ? BorderSide(color: Colors.green, width: 4)
+                ? const BorderSide(color: Colors.green, width: 4)
                 : BorderSide.none,
             left: left != null
-                ? BorderSide(color: Colors.green, width: 4)
+                ? const BorderSide(color: Colors.green, width: 4)
                 : BorderSide.none,
             right: right != null
-                ? BorderSide(color: Colors.green, width: 4)
+                ? const BorderSide(color: Colors.green, width: 4)
                 : BorderSide.none,
           ),
         ),

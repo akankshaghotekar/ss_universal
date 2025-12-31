@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:ss_universal/shared_pref/shared_pref_helper.dart';
 
 import 'package:ss_universal/utils/app_colors.dart';
 import 'package:ss_universal/utils/common_drawer.dart';
@@ -14,42 +15,24 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final PageController _pageController = PageController();
-  int _currentIndex = 0;
-  Timer? _timer;
-
-  final List<String> banners = [
-    "assets/images/carousel_img.png",
-    "assets/images/carousel_img.png",
-    "assets/images/carousel_img.png",
-  ];
+  String? userName;
 
   @override
   void initState() {
     super.initState();
-    _startAutoSlide();
+    _loadUserName();
   }
 
-  void _startAutoSlide() {
-    _timer = Timer.periodic(const Duration(seconds: 3), (timer) {
-      if (_currentIndex < banners.length - 1) {
-        _currentIndex++;
-      } else {
-        _currentIndex = 0;
-      }
-
-      _pageController.animateToPage(
-        _currentIndex,
-        duration: const Duration(milliseconds: 400),
-        curve: Curves.easeInOut,
-      );
+  Future<void> _loadUserName() async {
+    final name = await SharedPrefHelper.getUserName();
+    if (!mounted) return;
+    setState(() {
+      userName = name;
     });
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
-    _pageController.dispose();
     super.dispose();
   }
 
@@ -98,23 +81,65 @@ class _HomeScreenState extends State<HomeScreen> {
             SizedBox(height: h * 0.015),
 
             /// IMAGE CAROUSEL
+            /// WELCOME CARD
             Padding(
               padding: EdgeInsets.symmetric(horizontal: w * 0.04),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(14.r),
-                child: SizedBox(
-                  height: h * 0.25,
-                  width: double.infinity,
-                  child: PageView.builder(
-                    controller: _pageController,
-                    itemCount: banners.length,
-                    onPageChanged: (index) {
-                      _currentIndex = index;
-                    },
-                    itemBuilder: (context, index) {
-                      return Image.asset(banners[index], fit: BoxFit.cover);
-                    },
+              child: Container(
+                width: double.infinity,
+                padding: EdgeInsets.symmetric(
+                  horizontal: w * 0.06,
+                  vertical: h * 0.04,
+                ),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(14.r),
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFFFD54F), Color(0xFFFFC107)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black12,
+                      blurRadius: 8,
+                      offset: Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    /// LOGO
+                    Image.asset(
+                      "assets/images/ss-universal-logo.png",
+                      height: 60.h,
+                    ),
+
+                    SizedBox(height: h * 0.02),
+
+                    /// WELCOME TEXT
+                    Text(
+                      "Welcome to SS Universal",
+                      style: TextStyle(
+                        fontSize: 18.sp,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.black,
+                      ),
+                    ),
+
+                    SizedBox(height: h * 0.01),
+
+                    /// USER NAME (can bind later)
+                    Text(
+                      userName != null ? "$userName" : "Welcome",
+                      style: TextStyle(
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black87,
+                      ),
+                    ),
+
+                    SizedBox(height: h * 0.015),
+                  ],
                 ),
               ),
             ),

@@ -13,4 +13,6 @@ class ApiConfig {
 
   static String get addBdeLocationUrl => "${baseUrl}addBdeLocation.php";
   static String get addCompletedTaskUrl => "${baseUrl}addCompletedTask.php";
+  static String get addBdeLocationQRUrl => "${baseUrl}addBdeLocationQR.php";
+  static String get getBdeLocationQRUrl => "${baseUrl}getBdeLocationQR.php";
 }

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="24dp"
+    android:background="#FFFFFF"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- SS Universal Logo -->
+    <ImageView
+        android:layout_width="120dp"
+        android:layout_height="wrap_content"
+        android:src="@drawable/ss_universal_logo"
+        android:adjustViewBounds="true"
+        android:layout_marginBottom="24dp" />
+
+    <!-- Alarm Icon -->
+    <ImageView
+        android:layout_width="64dp"
+        android:layout_height="64dp"
+        android:src="@android:drawable/ic_lock_idle_alarm"
+        android:tint="@android:color/holo_red_dark"
+        android:layout_marginBottom="20dp" />
+
+    <!-- Title -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Alarm Ringing"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:textColor="#000000"
+        android:layout_marginBottom="6dp" />
+
+    <!-- Subtitle -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Scan QR code to stop the alarm"
+        android:textSize="15sp"
+        android:textColor="#555555"
+        android:layout_marginBottom="36dp" />
+
+    <!-- Scan QR Button -->
+    <Button
+        android:id="@+id/btnScanQr"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:text="SCAN QR TO STOP"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:textColor="#FFFFFF"
+        android:backgroundTint="@android:color/holo_green_dark"
+        android:layout_marginBottom="14dp" />
+
+    <!-- Helper Text -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Alarm will stop only after successful QR scan"
+        android:textSize="12sp"
+        android:textColor="#777777" />
+
+</LinearLayout>

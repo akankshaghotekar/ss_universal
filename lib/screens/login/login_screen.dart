@@ -85,10 +85,12 @@ class _LoginScreenState extends State<LoginScreen>
     if (res['status'] == 0 && res['data'] != null && res['data'].isNotEmpty) {
       final user = res['data'][0];
       final userId = user['usersrno'];
+      final userName = user['name'];
 
       await SharedPrefHelper.saveLogin(
         userId: userId,
         mobile: mobileController.text,
+        name: userName,
       );
 
       if (!mounted) return;
