@@ -2,15 +2,38 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:ui';
 
+import 'package:battery_plus/battery_plus.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_background_service_android/flutter_background_service_android.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ss_universal/api/api_service.dart';
 import 'package:ss_universal/shared_pref/shared_pref_helper.dart';
 
 DateTime? lastRecordedTime;
 const Duration updateInterval = Duration(minutes: 1);
+final Battery _battery = Battery();
+
+// const MethodChannel _batteryChannel = MethodChannel('battery_channel');
+
+// Future<int?> getBatteryLevel() async {
+//   try {
+//     final int battery = await _batteryChannel.invokeMethod('getBatteryLevel');
+//     return battery;
+//   } catch (_) {
+//     return null;
+//   }
+// }
+
+Future<int?> getBatteryLevelSafe() async {
+  try {
+    return await _battery.batteryLevel;
+  } catch (e) {
+    return null;
+  }
+}
 
 StreamSubscription<Position>? positionSub;
 bool _locationStreamPaused = false;
@@ -68,7 +91,7 @@ void _startLocationStream(ServiceInstance service) {
             if (!online) {
               if (service is AndroidServiceInstance) {
                 service.setForegroundNotificationInfo(
-                  title: "SS Universal – Internet OFF",
+                  title: "Spotless Solutions – Internet OFF",
                   content: "Please turn ON mobile data or WiFi",
                 );
               }
@@ -77,19 +100,33 @@ void _startLocationStream(ServiceInstance service) {
 
             final userSrNo = await SharedPrefHelper.getUserId();
             if (userSrNo != null) {
+              final battery = await getBatteryLevelSafe();
+
               await ApiService.sendLiveLocation(
                 userSrNo: userSrNo,
                 lat: position.latitude.toString(),
                 lng: position.longitude.toString(),
+                batteryPercentage: battery?.toString() ?? "0",
+              );
+
+              debugPrint(
+                "Location sent - "
+                "Lat=${position.latitude}, "
+                "Lng=${position.longitude}, "
+                "Battery=${battery ?? 'NA'}%",
               );
             }
 
+            // final battery = await getBatteryLevelSafe();
+            // debugPrint("Battery Level = $battery%");
+
+            // final batteryText = battery != null ? " | Battery: $battery%" : "";
+
             if (service is AndroidServiceInstance) {
               service.setForegroundNotificationInfo(
-                title: "SS Universal – Attendance Active",
-                content:
-                    "Lat: ${position.latitude.toStringAsFixed(5)}, "
-                    "Lng: ${position.longitude.toStringAsFixed(5)}",
+                title: "Spotless Solutions – Attendance Active",
+                content: "Welcome to Spotless Solutions",
+                // "$batteryText",
               );
             }
           }
@@ -114,7 +151,7 @@ void onStart(ServiceInstance service) async {
   if (service is AndroidServiceInstance) {
     service.setAsForegroundService();
     service.setForegroundNotificationInfo(
-      title: "SS Universal Active",
+      title: "Spotless Solutions Active",
       content: "Location tracking is running",
     );
   }
@@ -124,7 +161,7 @@ void onStart(ServiceInstance service) async {
     if (service is AndroidServiceInstance) {
       service.setAsForegroundService();
       service.setForegroundNotificationInfo(
-        title: "SS Universal – Attendance Active",
+        title: "Spotless Solutions – Attendance Active",
         content: "Live location tracking is running",
       );
     }
@@ -144,7 +181,7 @@ void onStart(ServiceInstance service) async {
     if (!gpsEnabled) {
       if (service is AndroidServiceInstance) {
         service.setForegroundNotificationInfo(
-          title: "SS Universal – GPS OFF",
+          title: "Spotless Solutions – GPS OFF",
           content: "Please turn ON location services",
         );
       }

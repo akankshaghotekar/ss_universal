@@ -25,6 +25,7 @@ class _MarkAttendanceScreenState extends State<MarkAttendanceScreen> {
 
   bool isMarking = false;
   bool isLoggingOut = false;
+  bool _isAlarmRinging = false;
 
   Future<void> _markAttendance() async {
     if (isMarking) return;
@@ -59,6 +60,7 @@ class _MarkAttendanceScreenState extends State<MarkAttendanceScreen> {
       // START PATROL ALARM
       try {
         await _alarmChannel.invokeMethod('scheduleAlarm');
+        _isAlarmRinging = true;
       } catch (e) {
         debugPrint('Failed to start alarm: $e');
       }
@@ -70,6 +72,14 @@ class _MarkAttendanceScreenState extends State<MarkAttendanceScreen> {
   }
 
   Future<void> _dayLogOff() async {
+    final service = FlutterBackgroundService();
+    final isRunning = await service.isRunning();
+
+    if (_isAlarmRinging) {
+      _showMsg("Please scan QR code first to stop the alarm");
+      return;
+    }
+
     if (isLoggingOut) return;
 
     setState(() => isLoggingOut = true);
@@ -134,6 +144,9 @@ class _MarkAttendanceScreenState extends State<MarkAttendanceScreen> {
     } else if (brand.contains('realme')) {
       extra =
           '\n\nRealme: Battery → App battery usage → Allow background activity';
+    } else if (brand.contains('samsung')) {
+      extra =
+          '\n\nSamsung: Battery → Background usage limits → Never sleeping apps → Add this app';
     }
 
     if (!mounted) return;
@@ -142,10 +155,10 @@ class _MarkAttendanceScreenState extends State<MarkAttendanceScreen> {
       context: context,
       barrierDismissible: false,
       builder: (_) => AlertDialog(
-        title: const Text('Allow Background Tracking'),
+        title: const Text('Allow Battery Permission'),
         content: Text(
-          'To track your location continuously during work hours, '
-          'please allow battery usage as "No restrictions".$extra',
+          'Battery Permission Required '
+          'Please allow battery usage as "No restrictions".$extra',
         ),
         actions: [
           TextButton(
@@ -236,10 +249,7 @@ class _MarkAttendanceScreenState extends State<MarkAttendanceScreen> {
                   const Spacer(),
 
                   /// LOGO
-                  Image.asset(
-                    "assets/images/ss-universal-logo.png",
-                    height: 38.h,
-                  ),
+                  Image.asset("assets/images/logo.jpg", height: 60.h),
 
                   const Spacer(),
                 ],

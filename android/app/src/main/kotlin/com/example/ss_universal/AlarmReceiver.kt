@@ -1,5 +1,6 @@
 package com.example.ss_universal
 
+import android.os.Build
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -7,6 +8,11 @@ import android.content.Intent
 class AlarmReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val serviceIntent = Intent(context, AlarmService::class.java)
-        context.startForegroundService(serviceIntent)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            context.startForegroundService(serviceIntent)
+        } else {
+            context.startService(serviceIntent)
+        }
+
     }
 }

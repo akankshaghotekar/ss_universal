@@ -8,8 +8,8 @@ import android.content.Intent
 object AlarmScheduler {
 
     // CHANGE THIS VALUE
-    const val INTERVAL_MILLIS = 5 * 60 * 1000L   // 1 minute (testing)
-    // const val INTERVAL_MILLIS = 60 * 60 * 1000L  // 1 hour (production)
+    //const val INTERVAL_MILLIS = 5 * 60 * 1000L   // 1 minute (testing)
+    const val INTERVAL_MILLIS = 60 * 60 * 1000L  // 1 hour (production)
 
     fun scheduleAlarm(context: Context) {
         val alarmManager =

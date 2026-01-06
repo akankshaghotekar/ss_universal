@@ -2,24 +2,39 @@ package com.example.ss_universal
 
 import android.app.*
 import android.content.Intent
+import android.os.BatteryManager
+import android.content.Context
 import android.media.AudioAttributes
 import android.media.MediaPlayer
 import android.os.IBinder
 import android.os.PowerManager
+import android.util.Log
 import androidx.core.app.NotificationCompat
 
+
 class AlarmService : Service() {
+
+    companion object {
+        var isFinalStop = false
+    }
 
     private var mediaPlayer: MediaPlayer? = null
     private var wakeLock: PowerManager.WakeLock? = null
     private val CHANNEL_ID = "ALARM_CHANNEL"
 
+    private val handler = android.os.Handler()
+    private val batteryRunnable = object : Runnable {
+        override fun run() {
+            saveBatteryToPrefs()
+            handler.postDelayed(this, 60_000) // every 1 minute
+        }
+    }
+
+
     override fun onCreate() {
         super.onCreate()
-        acquireWakeLock()
-        createNotificationChannel()
 
-        
+        createNotificationChannel()
 
         val fullScreenIntent = Intent(this, AlarmActivity::class.java)
         val fullScreenPendingIntent = PendingIntent.getActivity(
@@ -32,24 +47,30 @@ class AlarmService : Service() {
         val notification = NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
             .setContentTitle("Alarm Ringing")
-            .setContentText("Tap STOP to stop alarm")
+            .setContentText("Scan QR to stop alarm")
             .setCategory(NotificationCompat.CATEGORY_ALARM)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setPriority(NotificationCompat.PRIORITY_MAX)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .setFullScreenIntent(fullScreenPendingIntent, true)
-            
+            .setOngoing(true)
+            .setAutoCancel(false)
+            .setOnlyAlertOnce(false)
+            .setDefaults(Notification.DEFAULT_ALL)
+            //.setFullScreenIntent(fullScreenPendingIntent, true)
             .build()
 
-
-
+        // MUST BE FIRST
         startForeground(1, notification)
+
+        // AFTER foreground is started
+        acquireWakeLock()
         startAlarm()
-        //openAlarmScreen()
+        handler.post(batteryRunnable)
     }
+
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         
-        return START_NOT_STICKY
+        return START_STICKY
     }
 
     private fun startAlarm() {
@@ -57,6 +78,7 @@ class AlarmService : Service() {
             setAudioAttributes(
                 AudioAttributes.Builder()
                     .setUsage(AudioAttributes.USAGE_ALARM)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
                     .build()
             )
             setDataSource(this@AlarmService,
@@ -74,7 +96,8 @@ class AlarmService : Service() {
     }
 
     private fun acquireWakeLock() {
-        val pm = getSystemService(POWER_SERVICE) as PowerManager
+        val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
+
         wakeLock = pm.newWakeLock(
             PowerManager.PARTIAL_WAKE_LOCK,
             "AlarmApp::WakeLock"
@@ -82,33 +105,63 @@ class AlarmService : Service() {
         wakeLock?.acquire(10 * 60 * 1000L)
     }
 
+
     override fun onDestroy() {
+        handler.removeCallbacks(batteryRunnable)
         mediaPlayer?.stop()
         mediaPlayer?.release()
         wakeLock?.release()
 
-        AlarmScheduler.scheduleAlarm(this)
+        if (!isFinalStop) {
+            // Alarm stopped normally → schedule again
+            AlarmScheduler.scheduleAlarm(this)
+        } else {
+            // User logged out → DO NOT reschedule
+            isFinalStop = false // reset for next login
+        }
 
         super.onDestroy()
     }
+
 
     override fun onBind(intent: Intent?): IBinder? = null
 
     private fun createNotificationChannel() {
         val manager = getSystemService(NotificationManager::class.java)
 
-        // DELETE OLD CHANNEL IF EXISTS
-        manager.deleteNotificationChannel(CHANNEL_ID)
+        
+        
 
-        val channel = NotificationChannel(
-            CHANNEL_ID,
-            "Alarm Channel",
-            NotificationManager.IMPORTANCE_HIGH
-        ).apply {
-            lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+        if (manager.getNotificationChannel(CHANNEL_ID) == null) {
+            val channel = NotificationChannel(
+                CHANNEL_ID,
+                "Alarm Channel",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+            }
+            manager.createNotificationChannel(channel)
         }
 
-        manager.createNotificationChannel(channel)
     }
+
+    private fun getBatteryPercentage(): Int {
+        val batteryManager =
+            getSystemService(Context.BATTERY_SERVICE) as BatteryManager
+        return batteryManager.getIntProperty(
+            BatteryManager.BATTERY_PROPERTY_CAPACITY
+        )
+    }
+
+    private fun saveBatteryToPrefs() {
+        val battery = getBatteryPercentage()
+
+        val prefs = getSharedPreferences("battery_pref", Context.MODE_PRIVATE)
+        prefs.edit().putInt("battery", battery).apply()
+
+        Log.d("BATTERY_NATIVE", "Battery saved = $battery%")
+    }
+
+
 
 }

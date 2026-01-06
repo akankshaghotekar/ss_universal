@@ -101,10 +101,7 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
                     ),
                   ),
                   const Spacer(),
-                  Image.asset(
-                    "assets/images/ss-universal-logo.png",
-                    height: 38.h,
-                  ),
+                  Image.asset("assets/images/logo.jpg", height: 60.h),
                   const Spacer(),
                   InkWell(
                     onTap: () {

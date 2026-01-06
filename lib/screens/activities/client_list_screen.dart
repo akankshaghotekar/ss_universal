@@ -43,17 +43,14 @@ class _ClientsListScreenState extends State<ClientsListScreen> {
               ),
               child: Row(
                 children: [
-                  Builder(
-                    builder: (context) => InkWell(
-                      onTap: () => Scaffold.of(context).openDrawer(),
-                      child: const Icon(Icons.menu, size: 28),
-                    ),
+                  IconButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
+                    icon: Icon(Icons.arrow_back),
                   ),
                   const Spacer(),
-                  Image.asset(
-                    "assets/images/ss-universal-logo.png",
-                    height: 38.h,
-                  ),
+                  Image.asset("assets/images/logo.jpg", height: 60.h),
                   const Spacer(),
                 ],
               ),

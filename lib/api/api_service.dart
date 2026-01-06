@@ -111,11 +111,13 @@ class ApiService {
     required String userSrNo,
     required String lat,
     required String lng,
+    required String batteryPercentage,
   }) async {
     return await _postRequest(ApiConfig.addBdeLocationUrl, {
       'usersrno': userSrNo,
       'lat': lat,
       'lng': lng,
+      'battery_percentage': batteryPercentage,
     });
   }
 
@@ -146,18 +148,35 @@ class ApiService {
     }
   }
 
-  static Future<Map<String, dynamic>> addBdeLocationQR({
+  static Future<Map<String, dynamic>> addBdeLocationQRWithImage({
     required String userSrNo,
     required String clientLocationSrNo,
     required String lat,
     required String lng,
+    required String batteryPercentage,
+    required File image,
   }) async {
-    return await _postRequest(ApiConfig.addBdeLocationQRUrl, {
-      'usersrno': userSrNo,
-      'client_location_srno': clientLocationSrNo,
-      'lat': lat,
-      'lng': lng,
-    });
+    try {
+      final request = http.MultipartRequest(
+        "POST",
+        Uri.parse(ApiConfig.addBdeLocationQRUrl),
+      );
+
+      request.fields['usersrno'] = userSrNo;
+      request.fields['client_location_srno'] = clientLocationSrNo;
+      request.fields['lat'] = lat;
+      request.fields['lng'] = lng;
+      request.fields['battery_percentage'] = batteryPercentage;
+
+      request.files.add(await http.MultipartFile.fromPath('img1', image.path));
+
+      final response = await request.send();
+      final res = await http.Response.fromStream(response);
+
+      return jsonDecode(res.body);
+    } catch (e) {
+      return {'status': 1, 'message': 'Network error'};
+    }
   }
 
   static Future<List<ScanHistoryModel>> getScanHistory({

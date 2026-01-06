@@ -16,12 +16,12 @@
         android:layout_marginBottom="24dp" />
 
     <!-- Alarm Icon -->
-    <ImageView
+    <!-- <ImageView
         android:layout_width="64dp"
         android:layout_height="64dp"
         android:src="@android:drawable/ic_lock_idle_alarm"
         android:tint="@android:color/holo_red_dark"
-        android:layout_marginBottom="20dp" />
+        android:layout_marginBottom="20dp" /> -->
 
     <!-- Title -->
     <TextView

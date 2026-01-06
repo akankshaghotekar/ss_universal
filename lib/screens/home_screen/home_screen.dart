@@ -68,10 +68,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                   const Spacer(),
 
-                  Image.asset(
-                    "assets/images/ss-universal-logo.png",
-                    height: 40.h,
-                  ),
+                  Image.asset("assets/images/logo.jpg", height: 60.h),
 
                   const Spacer(),
                 ],
@@ -110,15 +107,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     /// LOGO
                     Image.asset(
-                      "assets/images/ss-universal-logo.png",
-                      height: 60.h,
+                      "assets/images/ss_spotless_sulution_logo.png",
+                      height: 200.h,
+                      fit: BoxFit.contain,
                     ),
 
-                    SizedBox(height: h * 0.02),
-
-                    /// WELCOME TEXT
+                    // WELCOME TEXT
                     Text(
-                      "Welcome to SS Universal",
+                      "Welcome to Spotless Solution",
                       style: TextStyle(
                         fontSize: 18.sp,
                         fontWeight: FontWeight.w700,
@@ -126,13 +122,13 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
 
-                    SizedBox(height: h * 0.01),
+                    // SizedBox(height: h * 0.01),
 
                     /// USER NAME (can bind later)
                     Text(
-                      userName != null ? "$userName" : "Welcome",
+                      userName != null ? "$userName!" : "Welcome",
                       style: TextStyle(
-                        fontSize: 16.sp,
+                        fontSize: 18.sp,
                         fontWeight: FontWeight.w600,
                         color: Colors.black87,
                       ),

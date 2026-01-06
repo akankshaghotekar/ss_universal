@@ -90,7 +90,7 @@ class CommonDrawer extends StatelessWidget {
                   ),
                   SizedBox(width: width * 0.15),
                   Image.asset(
-                    "assets/images/ss-universal-logo.png",
+                    "assets/images/ss_spotless_sulution_logo.png",
                     width: width * 0.33,
                   ),
                 ],

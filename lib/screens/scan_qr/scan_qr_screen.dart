@@ -1,8 +1,15 @@
+import 'dart:io';
+
+import 'package:battery_plus/battery_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:path/path.dart' as path;
+import 'package:path_provider/path_provider.dart';
 import 'package:ss_universal/api/api_service.dart';
 import 'package:ss_universal/shared_pref/shared_pref_helper.dart';
 import 'package:ss_universal/utils/media_query.dart';
@@ -17,6 +24,8 @@ class ScanQrScreen extends StatefulWidget {
 class _ScanQrScreenState extends State<ScanQrScreen> {
   final MobileScannerController _controller = MobileScannerController();
   bool _isScanned = false;
+  final Battery _battery = Battery();
+  bool _isAlarmRinging = false;
 
   static const MethodChannel _alarmChannel = MethodChannel('alarm_channel');
 
@@ -24,6 +33,32 @@ class _ScanQrScreenState extends State<ScanQrScreen> {
   void dispose() {
     _controller.dispose();
     super.dispose();
+  }
+
+  Future<File?> _compressImage(File file) async {
+    final dir = await getTemporaryDirectory();
+
+    final targetPath = path.join(
+      dir.path,
+      "qr_${DateTime.now().millisecondsSinceEpoch}.jpg",
+    );
+
+    final compressedFile = await FlutterImageCompress.compressAndGetFile(
+      file.absolute.path,
+      targetPath,
+      quality: 40,
+      minWidth: 800,
+      minHeight: 800,
+      format: CompressFormat.jpeg,
+    );
+
+    if (compressedFile == null) return null;
+
+    debugPrint(
+      "QR Image compressed: ${(await File(compressedFile.path).length() / 1024).toStringAsFixed(2)} KB",
+    );
+
+    return File(compressedFile.path);
   }
 
   Future<void> _onDetect(BarcodeCapture capture) async {
@@ -49,17 +84,46 @@ class _ScanQrScreenState extends State<ScanQrScreen> {
         desiredAccuracy: LocationAccuracy.high,
       );
 
-      // Call QR location API
-      final res = await ApiService.addBdeLocationQR(
+      // Pick image (front camera)
+      final ImagePicker picker = ImagePicker();
+      final XFile? photo = await picker.pickImage(
+        source: ImageSource.camera,
+        preferredCameraDevice: CameraDevice.front,
+        imageQuality: 60,
+      );
+
+      if (photo == null) {
+        _isScanned = false;
+        return;
+      }
+
+      // Compress image
+      final originalImage = File(photo.path);
+      final compressedImage = await _compressImage(originalImage);
+
+      if (compressedImage == null) {
+        _isScanned = false;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Image processing failed")),
+        );
+        return;
+      }
+      final batteryLevel = await _battery.batteryLevel;
+
+      // Call QR API with image
+      final res = await ApiService.addBdeLocationQRWithImage(
         userSrNo: userSrNo,
         clientLocationSrNo: clientLocationSrNo,
         lat: position.latitude.toString(),
         lng: position.longitude.toString(),
+        batteryPercentage: batteryLevel.toString(),
+        image: compressedImage,
       );
 
       // Only on SUCCESS → stop alarm
       if (res['status'] == 0) {
         await _alarmChannel.invokeMethod('stopAlarm');
+        _isAlarmRinging = true;
 
         if (!mounted) return;
 
